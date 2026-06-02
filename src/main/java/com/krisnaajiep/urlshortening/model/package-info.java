@@ -1,0 +1,1 @@
+package com.krisnaajiep.urlshortening.model;
