@@ -1,0 +1,226 @@
+openapi: 3.1.0
+info:
+  title: URL Shortening Service
+  version: v1.0.0
+  description: |
+    A simple RESTful API that allows users to shorten long URLs. This API provide endpoints to create, retrieve, update,
+    and delete short URLs. It also provides statistics on the number of times a short URL has been accessed.
+    
+    [GitHub Repository](https://github.com/krisnaajiep/springboot-url-shortening-service)
+  contact:
+    email: krisnaajiep@gmail.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:8080
+    description: Generated server url
+tags:
+  - name: Shorten
+    description: Operation related to URL Shortening
+paths:
+  /shorten:
+    post:
+      tags:
+        - Shorten
+      summary: Create Short URL
+      description: Create a new short URL for the provided original URL.
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShortUrlRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvalidRequestResponse"
+  /shorten/{shortCode}:
+    get:
+      tags:
+        - Shorten
+      summary: Retrieve Original URL
+      description:  Retrieve the Short URL by short code parameter.
+      operationId: retrieve
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlNotFoundResponse"
+    put:
+      tags:
+        - Shorten
+      summary: Update Short URL
+      description: Update an existing original URL of Short URL by short code parameter.
+      operationId: update
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShortUrlRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvalidRequestResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlNotFoundResponse"
+    delete:
+      tags:
+        - Shorten
+      summary: Delete Short URL
+      description: Delete an existing Short URL by short code parameter.
+      operationId: delete
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlNotFoundResponse"
+  /shorten/{shortCode}/stats:
+    get:
+      tags:
+        - Shorten
+      summary: Get URL Statistics
+      description: Get statistics for a short URL by short code parameter.
+      operationId: getStatistics
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlResponseWithStats"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlNotFoundResponse"
+components:
+  schemas:
+    ShortUrlRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          minLength: 1
+          pattern: ^(https?://).+
+          example: https://example.com/hello/world/1
+      required:
+        - url
+    ShortUrlResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        url:
+          type: string
+          example: https://example.com/hello/world/1
+        shortCode:
+          type: string
+          example: abc123
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ShortUrlResponseWithStats:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        url:
+          type: string
+          example: https://example.com/hello/world/1
+        shortCode:
+          type: string
+          example: abc123
+        accessCount:
+          type: integer
+          format: int64
+          example: 10
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    InvalidRequestResponse:
+      type: object
+      properties:
+        errors:
+          type: object
+          properties:
+            url:
+              type: string
+              example: "URL must start with http:// or https://"
+    ShortUrlNotFoundResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "Short code not found"
