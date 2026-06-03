@@ -71,4 +71,13 @@ public class ShortUrlService {
 
         shortUrlRepository.delete(shortUrl);
     }
+
+    @Transactional(readOnly = true)
+    public ShortUrlResponse getStats(String shortCode) {
+        ShortUrl shortUrl = shortUrlRepository.findByShortCode(shortCode).orElseThrow(
+                () ->  new NotFoundException("Short code not found: " + shortCode)
+        );
+
+        return ShortUrlResponse.from(shortUrl, true);
+    }
 }

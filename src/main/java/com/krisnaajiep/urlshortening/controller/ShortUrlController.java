@@ -54,4 +54,10 @@ public class ShortUrlController {
         shortUrlService.delete(shortCode);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping(value = "/{shortCode}/stats", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ShortUrlResponse> getStatistics(@PathVariable("shortCode") String shortCode) {
+        ShortUrlResponse response = shortUrlService.getStats(shortCode);
+        return ResponseEntity.ok(response);
+    }
 }
