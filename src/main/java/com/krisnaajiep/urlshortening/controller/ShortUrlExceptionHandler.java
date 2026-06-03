@@ -43,9 +43,17 @@ public class ShortUrlExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleInternalServerError(InternalServerErrorException ex) {
         logger.warn("Internal server error occurred: " + ex.getMessage());
 
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-        problemDetail.setDetail(ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
 
         return ResponseEntity.internalServerError().body(problemDetail);
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<Object> handleNotFound(NotFoundException ex) {
+        logger.warn("Not found exception occurred: " + ex.getMessage());
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 }
