@@ -51,4 +51,15 @@ public class ShortUrlService {
 
         return ShortUrlResponse.from(shortUrl, false);
     }
+
+    @Transactional
+    public ShortUrlResponse update(String shortCode, ShortUrlRequest request) {
+        ShortUrl shortUrl = shortUrlRepository.findByShortCode(shortCode).orElseThrow(
+                () -> new NotFoundException("Short code not found: " + shortCode)
+        );
+
+        shortUrl.setUrl(request.getUrl());
+
+        return ShortUrlResponse.from(shortUrl, false);
+    }
 }
