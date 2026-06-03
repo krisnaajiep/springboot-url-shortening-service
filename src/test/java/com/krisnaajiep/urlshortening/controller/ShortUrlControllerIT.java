@@ -25,8 +25,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("test")
@@ -134,7 +133,9 @@ class ShortUrlControllerIT {
                 }
         );
 
-        MvcResult retrieveResult = mockMvc.perform(get("/shorten/{shortCode}", createResponse.getShortCode()))
+        String shortCode = createResponse.getShortCode();
+
+        MvcResult retrieveResult = mockMvc.perform(get("/shorten/{shortCode}", shortCode))
                 .andExpectAll(status().isOk())
                 .andReturn();
 
@@ -144,10 +145,102 @@ class ShortUrlControllerIT {
                 }
         );
 
+        assertNotNull(retrieveResponse.getId());
         assertEquals(url, retrieveResponse.getUrl());
+        assertEquals(shortCode, retrieveResponse.getShortCode());
+        assertNotNull(retrieveResponse.getCreatedAt());
+        assertNotNull(retrieveResponse.getUpdatedAt());
+        assertNull(retrieveResponse.getAccessCount());
 
         ShortUrl shortUrl = shortUrlRepository.findByShortCode(retrieveResponse.getShortCode()).orElseThrow();
 
         assertEquals(1, shortUrl.getAccessCount());
+    }
+
+    @Test
+    void update_withInvalidRequest_shouldReturn400() throws Exception {
+        MvcResult result = mockMvc.perform(put("/shorten/{shortCode}", "12345")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ShortUrlRequest("invalidUrl"))))
+                .andExpectAll(status().isBadRequest())
+                .andReturn();
+
+        ProblemDetail response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        Map<String, Object> properties = response.getProperties();
+        assertNotNull(properties);
+
+        Map<String, String> errors = objectMapper.convertValue(
+                properties.get("errors"),
+                new TypeReference<>() {
+                }
+        );
+
+        assertNotNull(errors.get("url"));
+    }
+
+    @Test
+    void update_withNonExistingShortCode_shouldReturn404() throws Exception {
+        MvcResult result = mockMvc.perform(put("/shorten/{shortCode}", "12345")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new ShortUrlRequest("https://newurl.com/hello/world"))))
+                .andExpectAll(status().isNotFound())
+                .andReturn();
+
+        ProblemDetail response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
+    }
+
+    @Test
+    void update_withValidRequestAndExistingShortCode_shouldReturn200() throws Exception {
+        String url = "https://example.com/hello/world";
+        String newUrl = "https://newurl.com/hello/world";
+
+        MvcResult createResult = mockMvc.perform(post("/shorten")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ShortUrlRequest(url))))
+                .andExpectAll(status().isCreated())
+                .andReturn();
+
+        ShortUrlResponse createResponse = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        String shortCode = createResponse.getShortCode();
+
+        MvcResult updateResult = mockMvc.perform(put("/shorten/{shortCode}", shortCode)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ShortUrlRequest(newUrl))))
+                .andExpectAll(status().isOk())
+                .andReturn();
+
+        ShortUrlResponse updateResponse = objectMapper.readValue(
+                updateResult.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        assertNotNull(updateResponse.getId());
+        assertEquals(newUrl, updateResponse.getUrl());
+        assertEquals(shortCode, updateResponse.getShortCode());
+        assertNotNull(updateResponse.getCreatedAt());
+        assertNotNull(updateResponse.getUpdatedAt());
+        assertNull(updateResponse.getAccessCount());
+
+        ShortUrl shortUrl = shortUrlRepository.findByShortCode(shortCode).orElseThrow();
+
+        assertEquals(updateResponse.getUrl(), shortUrl.getUrl());
     }
 }
