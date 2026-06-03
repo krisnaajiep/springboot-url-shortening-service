@@ -134,6 +134,7 @@ class ShortUrlControllerIT {
         );
 
         String shortCode = createResponse.getShortCode();
+        assertNotNull(shortUrlRepository.findByShortCode(shortCode).orElse(null));
 
         MvcResult retrieveResult = mockMvc.perform(get("/shorten/{shortCode}", shortCode))
                 .andExpectAll(status().isOk())
@@ -219,6 +220,7 @@ class ShortUrlControllerIT {
         );
 
         String shortCode = createResponse.getShortCode();
+        assertNotNull(shortUrlRepository.findByShortCode(shortCode).orElse(null));
 
         MvcResult updateResult = mockMvc.perform(put("/shorten/{shortCode}", shortCode)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -242,5 +244,37 @@ class ShortUrlControllerIT {
         ShortUrl shortUrl = shortUrlRepository.findByShortCode(shortCode).orElseThrow();
 
         assertEquals(updateResponse.getUrl(), shortUrl.getUrl());
+    }
+
+    @Test
+    void delete_withNonExistingShortCode_shouldReturn404() throws Exception {
+        mockMvc.perform(delete("/shorten/{shortCode}", "12345"))
+                .andExpectAll(status().isNotFound());
+    }
+
+    @Test
+    void delete_withExistingShortCode_shouldReturn204() throws Exception {
+        String url = "https://example.com/hello/world";
+
+        MvcResult createResult = mockMvc.perform(post("/shorten")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ShortUrlRequest(url))))
+                .andExpectAll(status().isCreated())
+                .andReturn();
+
+        ShortUrlResponse createResponse = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+
+        String shortCode = createResponse.getShortCode();
+        assertNotNull(shortUrlRepository.findByShortCode(shortCode).orElse(null));
+
+        mockMvc.perform(delete("/shorten/{shortCode}", shortCode))
+                .andExpectAll(status().isNoContent());
+
+        assertNull(shortUrlRepository.findByShortCode(shortCode).orElse(null));
     }
 }
