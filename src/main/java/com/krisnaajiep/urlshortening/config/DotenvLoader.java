@@ -15,6 +15,11 @@ public class DotenvLoader implements ApplicationListener<ApplicationEnvironmentP
     public void onApplicationEvent(@NonNull ApplicationEnvironmentPreparedEvent event) {
         log.info("Dotenv loader started");
 
+        if (event.getEnvironment().matchesProfiles("build", "test")) {
+            log.info("Skipping dotenv loading for build and test profiles.");
+            return;
+        }
+
         try {
             log.info("Loading .env file");
             Dotenv.configure().systemProperties().load();
