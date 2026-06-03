@@ -155,4 +155,27 @@ class ShortUrlServiceTest {
         verify(shortUrlRepository, times(1)).findByShortCode(anyString());
         verifyNoMoreInteractions(shortUrlRepository);
     }
+
+    @Test
+    void delete_withNonExistingShortCode_shouldThrowNotFoundException() {
+        when(shortUrlRepository.findByShortCode(anyString())).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> shortUrlService.delete("non-existing-short-code"));
+
+        verify(shortUrlRepository, times(1)).findByShortCode(anyString());
+        verifyNoMoreInteractions(shortUrlRepository);
+    }
+
+    @Test
+    void delete_withExistingShortCode_shouldDeleteShortUrl() {
+        ShortUrl shortUrl = Instancio.create(ShortUrl.class);
+
+        when(shortUrlRepository.findByShortCode(anyString())).thenReturn(Optional.of(shortUrl));
+
+        shortUrlService.delete(shortUrl.getShortCode());
+
+        verify(shortUrlRepository, times(1)).findByShortCode(anyString());
+        verify(shortUrlRepository, times(1)).delete(shortUrl);
+        verifyNoMoreInteractions(shortUrlRepository);
+    }
 }

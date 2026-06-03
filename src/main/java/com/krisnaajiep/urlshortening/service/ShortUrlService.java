@@ -62,4 +62,13 @@ public class ShortUrlService {
 
         return ShortUrlResponse.from(shortUrl, false);
     }
+
+    @Transactional
+    public void delete(String shortCode) {
+        ShortUrl shortUrl = shortUrlRepository.findByShortCode(shortCode).orElseThrow(
+                () -> new NotFoundException("Short code not found: " + shortCode)
+        );
+
+        shortUrlRepository.delete(shortUrl);
+    }
 }
