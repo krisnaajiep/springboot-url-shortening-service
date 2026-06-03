@@ -248,8 +248,17 @@ class ShortUrlControllerIT {
 
     @Test
     void delete_withNonExistingShortCode_shouldReturn404() throws Exception {
-        mockMvc.perform(delete("/shorten/{shortCode}", "12345"))
-                .andExpectAll(status().isNotFound());
+        MvcResult result = mockMvc.perform(delete("/shorten/{shortCode}", "12345"))
+                .andExpectAll(status().isNotFound())
+                .andReturn();
+
+        ProblemDetail response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
     }
 
     @Test
@@ -276,5 +285,63 @@ class ShortUrlControllerIT {
                 .andExpectAll(status().isNoContent());
 
         assertNull(shortUrlRepository.findByShortCode(shortCode).orElse(null));
+    }
+
+    @Test
+    void getStats_withNonExistingShortCode_shouldReturn404() throws Exception {
+        MvcResult result = mockMvc.perform(get("/shorten/{shortCode}", "12345"))
+                .andExpectAll(status().isNotFound())
+                .andReturn();
+
+        ProblemDetail response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
+    }
+
+    @Test
+    void getStats_withExistingShortCode_shouldReturn200() throws Exception {
+        int count = 10;
+        String url = "https://example.com/hello/world";
+
+        MvcResult createResult = mockMvc.perform(post("/shorten")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ShortUrlRequest(url))))
+                .andExpectAll(status().isCreated())
+                .andReturn();
+
+        ShortUrlResponse createResponse = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        String shortCode = createResponse.getShortCode();
+        assertNotNull(shortUrlRepository.findByShortCode(shortCode).orElse(null));
+
+        for (int i = 0; i < count; i++) {
+            mockMvc.perform(get("/shorten/{shortCode}", shortCode))
+                    .andExpectAll(status().isOk());
+        }
+
+        MvcResult result = mockMvc.perform(get("/shorten/{shortCode}/stats", shortCode))
+                .andExpectAll(status().isOk())
+                .andReturn();
+
+        ShortUrlResponse response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+        );
+
+        assertNotNull(response.getId());
+        assertEquals(url, response.getUrl());
+        assertEquals(shortCode, response.getShortCode());
+        assertNotNull(response.getCreatedAt());
+        assertNotNull(response.getUpdatedAt());
+        assertEquals(count, response.getAccessCount());
     }
 }
