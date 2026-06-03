@@ -178,4 +178,29 @@ class ShortUrlServiceTest {
         verify(shortUrlRepository, times(1)).delete(shortUrl);
         verifyNoMoreInteractions(shortUrlRepository);
     }
+
+    @Test
+    void getStats_withNonExistingShortCode_shouldThrowNotFoundException() {
+        when(shortUrlRepository.findByShortCode(anyString())).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> shortUrlService.getStats("non-existing-short-code"));
+
+        verify(shortUrlRepository, times(1)).findByShortCode(anyString());
+        verifyNoMoreInteractions(shortUrlRepository);
+    }
+
+    @Test
+    void getStats_withExistingShortCode_shouldReturnShortUrlResponseIncludeAccessCount() {
+        ShortUrl shortUrl = Instancio.create(ShortUrl.class);
+
+        when(shortUrlRepository.findByShortCode(anyString())).thenReturn(Optional.of(shortUrl));
+
+        ShortUrlResponse response = shortUrlService.getStats(shortUrl.getShortCode());
+        assertEquals(shortUrl.getShortCode(), response.getShortCode());
+        assertEquals(shortUrl.getUrl(), response.getUrl());
+        assertEquals(shortUrl.getAccessCount(), response.getAccessCount());
+
+        verify(shortUrlRepository, times(1)).findByShortCode(anyString());
+        verifyNoMoreInteractions(shortUrlRepository);
+    }
 }
