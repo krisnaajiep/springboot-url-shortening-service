@@ -1,0 +1,42 @@
+package com.krisnaajiep.urlshortening.service;
+
+import com.krisnaajiep.urlshortening.config.ShorteningProperties;
+import com.krisnaajiep.urlshortening.controller.InternalServerErrorException;
+import com.krisnaajiep.urlshortening.dto.ShortUrlRequest;
+import com.krisnaajiep.urlshortening.dto.ShortUrlResponse;
+import com.krisnaajiep.urlshortening.model.ShortUrl;
+import com.krisnaajiep.urlshortening.model.ShortUrlRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ShortUrlService {
+    private final ShortUrlRepository shortUrlRepository;
+    private final UrlShortener urlShortener;
+    private final ShorteningProperties shorteningProperties;
+
+    @Transactional
+    public ShortUrlResponse create(ShortUrlRequest request) {
+        ShortUrl saved = shortUrlRepository.save(new ShortUrl(request.getUrl()));
+        String shortCode = urlShortener.shorten(saved.getId());
+
+        int retries = 1;
+        while (shortUrlRepository.existsByShortCode(shortCode)) {
+            int maxRetries = shorteningProperties.getMaxRetries();
+            if (retries >= maxRetries) {
+                throw new InternalServerErrorException(
+                        "Failed to generate unique short code after " + maxRetries + " retries"
+                );
+            }
+
+            shortCode = urlShortener.shorten(saved.getId());
+            retries++;
+        }
+
+        saved.setShortCode(shortCode);
+
+        return ShortUrlResponse.from(saved, false);
+    }
+}
