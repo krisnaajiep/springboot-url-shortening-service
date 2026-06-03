@@ -2,6 +2,7 @@ package com.krisnaajiep.urlshortening.service;
 
 import com.krisnaajiep.urlshortening.config.ShorteningProperties;
 import com.krisnaajiep.urlshortening.controller.InternalServerErrorException;
+import com.krisnaajiep.urlshortening.controller.NotFoundException;
 import com.krisnaajiep.urlshortening.dto.ShortUrlRequest;
 import com.krisnaajiep.urlshortening.dto.ShortUrlResponse;
 import com.krisnaajiep.urlshortening.model.ShortUrl;
@@ -38,5 +39,16 @@ public class ShortUrlService {
         saved.setShortCode(shortCode);
 
         return ShortUrlResponse.from(saved, false);
+    }
+
+    @Transactional
+    public ShortUrlResponse retrieve(String shortCode) {
+        ShortUrl shortUrl = shortUrlRepository.findByShortCode(shortCode).orElseThrow(
+                () -> new NotFoundException("Short code not found: " + shortCode)
+        );
+
+        shortUrl.incrementAccessCount();
+
+        return ShortUrlResponse.from(shortUrl, false);
     }
 }
