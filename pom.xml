@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.krisnaajiep</groupId>
     <artifactId>springboot-url-shortening-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>springboot-url-shortening-service</name>
     <description>springboot-url-shortening-service</description>
     <url/>
